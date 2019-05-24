@@ -72,8 +72,10 @@ void loop() {
     updateSettingsPage();
   } else if (receivedValue == 3) {
     temperatureSetting = CELCIUS;
+    updateGraphicsMainPage();
   } else if (receivedValue == 4) {
     temperatureSetting = FAHRENHEIT;
+    updateGraphicsMainPage();
   } else if (receivedValue == 5) {
     for (int i = 0; i < 325; i++) {
       sWaterTemp.addValue(0, 50);
@@ -171,6 +173,9 @@ void updateSensorsOnMainScreen() {
   dtostrf(waterTemp, 2, 2, waterTempChar);
   tWaterTemp.setText(waterTempChar);
 
+}
+
+void updateGraphicsMainPage(){
   if (temperatureSetting == CELCIUS) {
     tWaterMeasure.setText("C");
     tAirMeasure.setText("C");
