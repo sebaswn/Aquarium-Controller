@@ -2,9 +2,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <DHT.h>
-#include <Nextion.h>
+//#include <Nextion.h>
 #include <SPI.h>
-#include <SD.h>
+//#include <SD.h>
 
 #define WaterTemperatureSensor 10
 #define DHTPIN 11
@@ -16,10 +16,15 @@
 #define FAHRENHEIT false
 #define OFF false
 
+#define HOMEPAGE 0
+#define SETTINGSPAGE 1
+#define WATERPAGE 4
+
+
 #define WaterTempGoalC 23
 #define WaterTempGoalF 77
 
-#define delayTime 50
+#define delayTime 100
 unsigned long previousTime = 0;
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -27,81 +32,82 @@ OneWire oneWire(WaterTemperatureSensor);
 DallasTemperature WaterSensor(&oneWire);
 
 //PageID, ID, Name
-NexText tAirTemp = NexText(0, 6, "tAirTemp");
-NexText tAirHum = NexText(0, 7, "tAirHum");
-NexText tWaterTemp = NexText(0, 12, "tWaterTemp");
-NexCheckbox cCelcius = NexCheckbox(1, 7, "cCelcius");
-NexCheckbox cFahrenheit = NexCheckbox(1, 6, "cFahrenheit");
-NexText tWaterMeasure = NexText(0, 21, "tWaterMeasure");
-NexText tAirMeasure = NexText(0, 19, "tAirMeasure");
-NexText tWaterTemp2 = NexText(4, 5, "tWaterTemp");
-NexText tWaterMeasure2 = NexText(4, 9, "tWaterMeasure");
-NexWaveform sWaterTemp = NexWaveform(4, 5, "sWaterTemp");
+//NexText tAirTemp = NexText(0, 6, "tAirTemp");
+//NexText tAirHum = NexText(0, 7, "tAirHum");
+//NexText tWaterTemp = NexText(0, 12, "tWaterTemp");
+//NexCheckbox cCelcius = NexCheckbox(1, 7, "cCelcius");
+//NexCheckbox cFahrenheit = NexCheckbox(1, 6, "cFahrenheit");
+//NexText tWaterMeasure = NexText(0, 21, "tWaterMeasure");
+//NexText tAirMeasure = NexText(0, 19, "tAirMeasure");
+//NexText tWaterTemp2 = NexText(4, 5, "tWaterTemp");
+//NexText tWaterMeasure2 = NexText(4, 9, "tWaterMeasure");
 
 
 //Temperatures
 float waterTemp, airTemp, airHum;
 boolean temperatureSetting = CELCIUS;
-int currentPage = 0;
+int currentPage = HOMEPAGE;
 boolean heaterStatus = OFF;
 
 //char buffer[100] = {0};
 
 void setup() {
   Serial.begin(9600);
-  nexInit();
+  //nexInit();
   WaterSensor.begin();
   dht.begin();
   Wire.begin();
+
 
   pinMode(relayHeaterPin, OUTPUT);
 }
 
 void loop() {
-
-  Wire.beginTransmission(1);
-  Wire.requestFrom(1, 2);    // request 6 bytes from slave device #1
-  int receivedValue = Wire.read() << 8 | Wire.read();
-  Wire.endTransmission();
-
-  if (receivedValue == 1) {
-    currentPage = 0;
-    updateSensorsOnMainScreen();
-  } else if (receivedValue == 2) {
-    currentPage = 1;
-    updateSettingsPage();
-  } else if (receivedValue == 3) {
-    temperatureSetting = CELCIUS;
-    updateGraphicsMainPage();
-  } else if (receivedValue == 4) {
-    temperatureSetting = FAHRENHEIT;
-    updateGraphicsMainPage();
-  } else if (receivedValue == 5) {
-    for (int i = 0; i < 325; i++) {
-      sWaterTemp.addValue(0, 50);
-    }
-    currentPage = 4;
-  }
+  checkForInstructions();
 
   if (delayTime <= millis() - previousTime) {
     checkRelays();
 
-    if (currentPage == 0) {
+    if (currentPage == HOMEPAGE) {
       updateSensorsOnMainScreen();
-    } else if (currentPage == 1) {
+    } else if (currentPage == SETTINGSPAGE) {
       //updateSettingsPage();
-    } else if (currentPage == 4) {
+    } else if (currentPage == WATERPAGE) {
 
       updateWaterPage();
     }
 
     previousTime = millis();
   }
-
-
-
 }
 
+
+
+void checkForInstructions(){
+  Wire.beginTransmission(1);
+  Wire.requestFrom(1, 2);    // request 6 bytes from slave device #1
+  int receivedValue = Wire.read() << 8 | Wire.read();
+  Wire.endTransmission();
+
+  if(receivedValue != 0){
+
+    if (receivedValue == 1) {
+      currentPage = HOMEPAGE;
+      updateSensorsOnMainScreen();
+      updateGraphicsMainPage();
+    } else if (receivedValue == 2) {
+      currentPage = SETTINGSPAGE;
+      updateSettingsPage();
+    } else if (receivedValue == 3) {
+      temperatureSetting = CELCIUS;
+    } else if (receivedValue == 4) {
+      temperatureSetting = FAHRENHEIT;
+    } else if (receivedValue == 5) {
+      currentPage = WATERPAGE;
+    }
+
+  }
+}
 
 void updateWaterPage() {
   getWaterSensorsReadings();
@@ -112,16 +118,16 @@ void updateWaterPage() {
     tempWaterTemp = map(tempWaterTemp, WaterTempGoalF - 10, WaterTempGoalF + 10, 0, 100);
   }
 
-  sWaterTemp.addValue(0,   tempWaterTemp);
+  //sWaterTemp.addValue(0,   tempWaterTemp);
+  writeToScreen("add ", "5,0," + String(tempWaterTemp));
 
-  static char waterTempChar[5];
-  dtostrf(waterTemp, 2, 2, waterTempChar);
-  tWaterTemp2.setText(waterTempChar);
+  writeToScreen("tWaterTemp.txt=\"", String(waterTemp) + "\"");
 
   if (temperatureSetting == CELCIUS) {
-    tWaterMeasure2.setText("C");
+
+    writeToScreen("tWaterMeasure2.txt=\"", "C\"");
   } else if (temperatureSetting == FAHRENHEIT) {
-    tWaterMeasure2.setText("F");
+      writeToScreen("tWaterMeasure2.txt=\"", "F\"");
   }
 
   if (heaterStatus == ON) {
@@ -149,51 +155,32 @@ void checkRelays() {
 
 void updateSettingsPage() {
   if (temperatureSetting == CELCIUS) {
-    cFahrenheit.setValue(0);
-    cCelcius.setValue(1);
+    writeToScreen("cFahrenheit.val=", 0);
+    writeToScreen("cCelcius.val=", 1);
+
   } else {
-    cCelcius.setValue(0);
-    cFahrenheit.setValue(1);
+    writeToScreen("cFahrenheit.val=", 1);
+    writeToScreen("cCelcius.val=", 0);
   }
-}
-
-void updateSensorsOnMainScreen() {
-  getWaterSensorsReadings();
-  getAirSensorsReadings();
-
-  static char hum[4];
-  dtostrf(airHum, 2, 1, hum);
-  tAirHum.setText(hum);
-
-  static char airTempChar[5];
-  dtostrf(airTemp, 2, 2, airTempChar);
-  tAirTemp.setText(airTempChar);
-
-  static char waterTempChar[5];
-  dtostrf(waterTemp, 2, 2, waterTempChar);
-  tWaterTemp.setText(waterTempChar);
 
 }
+
+
 
 void updateGraphicsMainPage(){
   if (temperatureSetting == CELCIUS) {
-    tWaterMeasure.setText("C");
-    tAirMeasure.setText("C");
+    writeToScreen("tWaterMeasure.txt=\"", "C\"");
+    writeToScreen("tAirMeasure.txt=\"", "C\"");
+
   } else if (temperatureSetting == FAHRENHEIT) {
-    tWaterMeasure.setText("F");
-    tAirMeasure.setText("F");
+    writeToScreen("tWaterMeasure.txt=\"", "F\"");
+    writeToScreen("tAirMeasure.txt=\"", "F\"");
   }
 
   if (heaterStatus == ON) {
-    Serial.print("p4.pic=29");
-    Serial.write(0xFF);
-    Serial.write(0xFF);
-    Serial.write(0xFF);
+    writeToScreen("p4.pic=", "29");
   } else {
-    Serial.print("p4.pic=28");
-    Serial.write(0xFF);
-    Serial.write(0xFF);
-    Serial.write(0xFF);
+    writeToScreen("p4.pic=", "28");
   }
 }
 
@@ -213,4 +200,32 @@ void getAirSensorsReadings() {
   } else {
     airTemp = dht.readTemperature(true);
   }
+}
+
+void updateSensorsOnMainScreen() {
+  getWaterSensorsReadings();
+  getAirSensorsReadings();
+
+  writeToScreen("tAirHum.txt=\"", String(airHum) + "\"");
+  writeToScreen("tAirTemp.txt=\"", String(airTemp) + "\"");
+  writeToScreen("tWaterTemp.txt=\"", String(waterTemp) + "\"");
+
+  updateGraphicsMainPage();
+
+}
+
+void writeToScreen(String instruction, String message){
+  Serial.print(instruction);
+  Serial.print(message);
+  Serial.write(0xFF);
+  Serial.write(0xFF);
+  Serial.write(0xFF);
+}
+
+void writeToScreen(String instruction, int value){
+  Serial.print(instruction);
+  Serial.print(value);
+  Serial.write(0xFF);
+  Serial.write(0xFF);
+  Serial.write(0xFF);
 }
