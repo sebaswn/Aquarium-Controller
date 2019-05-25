@@ -2,9 +2,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <DHT.h>
-//#include <Nextion.h>
+
 #include <SPI.h>
-//#include <SD.h>
+
 
 #define WaterTemperatureSensor 10
 #define DHTPIN 11
@@ -31,16 +31,6 @@ DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(WaterTemperatureSensor);
 DallasTemperature WaterSensor(&oneWire);
 
-//PageID, ID, Name
-//NexText tAirTemp = NexText(0, 6, "tAirTemp");
-//NexText tAirHum = NexText(0, 7, "tAirHum");
-//NexText tWaterTemp = NexText(0, 12, "tWaterTemp");
-//NexCheckbox cCelcius = NexCheckbox(1, 7, "cCelcius");
-//NexCheckbox cFahrenheit = NexCheckbox(1, 6, "cFahrenheit");
-//NexText tWaterMeasure = NexText(0, 21, "tWaterMeasure");
-//NexText tAirMeasure = NexText(0, 19, "tAirMeasure");
-//NexText tWaterTemp2 = NexText(4, 5, "tWaterTemp");
-//NexText tWaterMeasure2 = NexText(4, 9, "tWaterMeasure");
 
 
 //Temperatures
@@ -53,13 +43,14 @@ boolean heaterStatus = OFF;
 
 void setup() {
   Serial.begin(9600);
-  //nexInit();
+
   WaterSensor.begin();
   dht.begin();
   Wire.begin();
 
 
   pinMode(relayHeaterPin, OUTPUT);
+  writeToScreen("page ", 0);
 }
 
 void loop() {
