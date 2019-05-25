@@ -38,7 +38,8 @@ float waterTemp, airTemp, airHum;
 boolean temperatureSetting = CELCIUS;
 int currentPage = HOMEPAGE;
 boolean heaterStatus = OFF;
-
+int test = 0;
+int sleepTime = 60;
 //char buffer[100] = {0};
 
 void setup() {
@@ -50,11 +51,19 @@ void setup() {
 
 
   pinMode(relayHeaterPin, OUTPUT);
-  writeToScreen("page ", 0);
+  writeToScreen("page ", HOMEPAGE);
+  writeToScreen("thsp=", sleepTime);
+
+
 }
 
 void loop() {
   checkForInstructions();
+  if(test  > 10000){
+
+    test = 0;
+  }
+  test++;
 
   if (delayTime <= millis() - previousTime) {
     checkRelays();
@@ -70,6 +79,10 @@ void loop() {
 
     previousTime = millis();
   }
+}
+
+void wakeUp(){
+  writeToScreen("sleep=", 0); // 1 for sleep, 0 for wake up
 }
 
 
